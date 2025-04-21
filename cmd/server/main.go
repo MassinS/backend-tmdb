@@ -9,7 +9,7 @@ import (
 
 func main() {
 	// Associer le handler Accueil à la route "/"
-	http.HandleFunc("/Films", handlers.FilmsHandler)
+	http.HandleFunc("/Genre", handlers.GenreTVShowHandler)
 
 	log.Println("Serveur démarré sur le port 8081...")
 	if err := http.ListenAndServe(":8081", nil); err != nil {
