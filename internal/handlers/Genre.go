@@ -1,12 +1,12 @@
 package handlers
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
 	"os"
-	"bytes"
 	"time"
 
 	"github.com/joho/godotenv"
@@ -14,103 +14,121 @@ import (
 )
 
 var (
-	strapiURL = "https://tmdb-database-strapi.onrender.com/api/genre-tv-shows"
+	tmdbMovieGenreURL string
+	tmdbTvGenreURL    string
 )
 
+// TMDBGenre represents a genre from TMDB
 type TMDBGenre struct {
 	ID   int    `json:"id"`
 	Name string `json:"name"`
 }
 
+// GenreResponse is the envelope TMDB returns
 type GenreResponse struct {
 	Genres []TMDBGenre `json:"genres"`
 }
 
 func init() {
-	// Initialisation du scheduler
-	c := cron.New()
-	
-	// Planification à minuit chaque jour
-	_, err := c.AddFunc("11 0 * * *", func() {
-		log.Println("🚀 Démarrage de la tâche planifiée...")
-		SyncGenres()
-	})
-	
-	if err != nil {
-		log.Fatalf("Erreur de planification : %v", err)
-	}
-	
-	c.Start()
-	
-	// Chargement des variables d'environnement
+	// Load environment
 	if err := godotenv.Load(); err != nil {
-		log.Fatalf("Erreur .env : %v", err)
+		log.Printf("⚠️ .env non chargé: %v", err)
 	}
+	tmdbMovieGenreURL = "https://api.themoviedb.org/3/genre/movie/list"
+	tmdbTvGenreURL = "https://api.themoviedb.org/3/genre/tv/list"
+	// Schedule both movie and tv genre sync at midnight daily
+	c := cron.New()
+	_, err := c.AddFunc("2 * * * *", func() {
+		log.Println("🚀 Running SyncMovieGenres and SyncTvGenres")
+		SyncMovieGenres()
+		SyncTvGenres()
+	})
+	if err != nil {
+		log.Fatalf("Erreur planification cron: %v", err)
+	}
+	c.Start()
 }
 
-// SyncGenres contient la logique principale à exécuter
-func SyncGenres() {
-	startTime := time.Now()
-	
-	baseURL := os.Getenv("BASE_URL")
-	apiKey := os.Getenv("API_KEY")
-	
-	// Récupération des données TMDB
-	url := fmt.Sprintf("%s/genre/movie/list?api_key=%s", baseURL, apiKey)
-	resp, err := http.Get(url)
+
+// SyncMovieGenres retrieves movie genres and syncs to Strapi
+func SyncMovieGenres() {
+	strapiTvURL := os.Getenv("STRAPI_URL") + "/api/genre-tv-shows"
+
+	log.Println("🔄 SyncMovieGenres start")
+	syncGenres(tmdbMovieGenreURL, strapiTvURL)
+	log.Println("✅ SyncMovieGenres done")
+}
+
+// SyncTvGenres retrieves TV genres and syncs to Strapi
+func SyncTvGenres() {
+	strapiTvURL := os.Getenv("STRAPI_URL") + "/api/genre-tv-shows"
+	log.Println("🔄 SyncTvGenres start")
+	syncGenres(tmdbTvGenreURL, strapiTvURL)
+	log.Println("✅ SyncTvGenres done")
+
+}
+
+// syncGenres is shared logic for TMDB -> Strapi
+func syncGenres(tmdbURL, strapiURL string) {
+	strapiToken := os.Getenv("STRAPI_TOKEN")
+
+	start := time.Now()
+
+	resp, err := http.Get(fmt.Sprintf("%s?api_key=%s&language=fr-FR", tmdbURL, os.Getenv("API_KEY")))
 	if err != nil {
-		log.Printf("❌ Erreur de requête TMDB : %v", err)
+		log.Printf("❌ TMDB GET error: %v", err)
 		return
 	}
 	defer resp.Body.Close()
 
-	if resp.StatusCode != http.StatusOK {
-		log.Printf("⚠️ Code TMDB inattendu : %d", resp.StatusCode)
+	var tmdbRes GenreResponse
+	if err := json.NewDecoder(resp.Body).Decode(&tmdbRes); err != nil {
+		log.Printf("❌ JSON decode error: %v", err)
 		return
 	}
-
-	var tmdbGenres GenreResponse
-	if err := json.NewDecoder(resp.Body).Decode(&tmdbGenres); err != nil {
-		log.Printf("❌ Erreur décodage TMDB : %v", err)
-		return
-	}
-
-	// Envoi vers Strapi
-	for _, genre := range tmdbGenres.Genres {
-		payload := map[string]interface{}{
-			"data": map[string]interface{}{
-				"id_genre": genre.ID,
-				"nom_genre": genre.Name,
-			
-			},
+	log.Printf("TMDB returned %d genres", len(tmdbRes.Genres))
+    endpoint := os.Getenv("STRAPI_URL") + "/api/genre-tv-shows?" + "filters[id_genre][$eq]"
+	for _, g := range tmdbRes.Genres {
+		exists, err := Exists(g.ID,endpoint)
+		if err != nil {
+			log.Printf("⚠️ check exists error for %d: %v", g.ID, err)
+			continue
 		}
-		body, _ := json.Marshal(payload)
+		if exists {
+			log.Printf("ℹ️ skipped existing genre: %s (%d)", g.Name, g.ID)
+			continue
+		}
 
+		payload := map[string]interface{}{"data": map[string]interface{}{"id_genre": g.ID, "nom_genre": g.Name}}
+		body, _ := json.Marshal(payload)
+       
 		req, _ := http.NewRequest("POST", strapiURL, bytes.NewBuffer(body))
 		req.Header.Set("Content-Type", "application/json")
+		req.Header.Set("Authorization", "Bearer "+strapiToken)
 
 		res, err := http.DefaultClient.Do(req)
 		if err != nil {
-			log.Printf("❌ Erreur envoi %s: %v", genre.Name, err)
+			log.Printf("❌ Strapi POST error for %s: %v", g.Name, err)
 			continue
 		}
-		defer res.Body.Close()
+		res.Body.Close()
 
 		if res.StatusCode >= 400 {
-			log.Printf("⚠️ Échec envoi %s: %d", genre.Name, res.StatusCode)
+			log.Printf("⚠️ Strapi returned %d for %s", res.StatusCode, g.Name)
 		} else {
-			log.Printf("✅ Succès envoi %s", genre.Name)
+			log.Printf("✅ inserted genre: %s (%d)", g.Name, g.ID)
 		}
+
 	}
 
-	log.Printf("🎉 Synchronisation terminée en %s", time.Since(startTime))
+	log.Printf("Sync complete in %s", time.Since(start))
 }
 
-// Handler HTTP (optionnel)
+// GenreTVShowHandler triggers manual sync of both movie and tv genres
 func GenreTVShowHandler(w http.ResponseWriter, r *http.Request) {
-	SyncGenres()
+	go SyncMovieGenres()
+	go SyncTvGenres()
 	w.WriteHeader(http.StatusOK)
-	fmt.Fprintf(w, "Synchronisation déclenchée manuellement")
+	fmt.Fprintf(w, "Sync triggered")
 }
-
 
