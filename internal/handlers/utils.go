@@ -38,45 +38,6 @@ func Exists(tmdbID int, endpoint string) (bool, error) {
 	return len(data.Data) > 0, nil
 }
 
-/* Cette fonction recupère l'id d'un tuple de la table genre pour le stocker dans l'attribut genre de la table films */
-/* Remarque : Chaque film ou un TV show possède un ou plusieurs genre ( fantasy , horreur ...... ect ) */
-func getStrapiGenreID(id_genre int) (int, error) {
-	endpoint := os.Getenv("STRAPI_URL") + "/api/genre-tv-shows"
-	url := fmt.Sprintf("%s?filters[id_genre][$eq]=%d", endpoint, id_genre)
-
-	req, err := http.NewRequest("GET", url, nil)
-	if err != nil {
-		return 0, err
-	}
-	req.Header.Set("Authorization", "Bearer "+strapiToken)
-
-	res, err := http.DefaultClient.Do(req)
-	if err != nil {
-		return 0, err
-	}
-	defer res.Body.Close()
-
-	if res.StatusCode != http.StatusOK {
-		return 0, fmt.Errorf("strapi returned status %d", res.StatusCode)
-	}
-
-	// Structure de réponse attendue
-	var strapiResponse struct {
-		Data []struct {
-			ID int `json:"id"`
-		} `json:"data"`
-	}
-
-	if err := json.NewDecoder(res.Body).Decode(&strapiResponse); err != nil {
-		return 0, err
-	}
-
-	if len(strapiResponse.Data) == 0 {
-		return 0, fmt.Errorf("genre ID %d not found in Strapi", id_genre)
-	}
-
-	return strapiResponse.Data[0].ID, nil
-}
 
 // getLastFetchedPage interroge Strapi pour la plus grande page_fetched_from existante
 // la fonction getLastFetchedPage renvoie la dernière page ou le serveur a arrêté de récupérer les films lors de dernier appel
@@ -217,7 +178,6 @@ func getLastFetchedPageTvShowsStrapi(url string) int {
 
 }
 
-
 type FilmStrapi struct {
 	IDFilm int `json:"id_film,string"` // <- string car id_film est une string dans le JSON
 }
@@ -260,7 +220,6 @@ func getFilmsByPageStrapi(page int) ([]int, error) {
 	return filmIDs, nil
 }
 
-
 type TvShowStrapi struct {
 	IDFilm int `json:"id_TvShow,string"` // <- string car id_film est une string dans le JSON
 }
@@ -268,8 +227,6 @@ type TvShowStrapi struct {
 type ResponseTvShowStrapi struct {
 	Data []TvShowStrapi `json:"data"`
 }
-
-
 
 func getTvShowsByPageStrapi(page int) ([]int, error) {
 	strapiFilmURLWithPage := strapiTvShowURL + "?filters[page_fetched_from][$eq]=" + strconv.Itoa(page)

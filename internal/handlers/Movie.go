@@ -36,7 +36,6 @@ type TMDBMovie struct {
 	GenreIDs         []int   `json:"genre_ids"`
 }
 
-
 // MovieResponse enveloppe la réponse TMDB pour discover/movie
 type MovieResponse struct {
 	Page       int         `json:"page"`
@@ -48,7 +47,6 @@ func init() {
 
 	tmdbMovieURL = "https://api.themoviedb.org/3/discover/movie"
 	strapiFilmURL = os.Getenv("STRAPI_URL") + "/api/films"
-
 
 	if err := godotenv.Load(); err != nil {
 		log.Printf("⚠️ .env non chargé: %v", err)
@@ -65,8 +63,6 @@ func init() {
 	c.Start()
 
 }
-
-
 
 // la fonction SyncMovies est la responsable de recuperer les données
 // vérifier si les données existe pas dans la base de données
@@ -101,7 +97,7 @@ func SyncMovies() {
 
 	allSuccess := true
 	endpoint := strapiFilmURL + "?filters[id_film][$eq]"
-	
+
 	for _, m := range mr.Results {
 		exists, err := Exists(m.ID, endpoint)
 		if err != nil {
@@ -113,17 +109,6 @@ func SyncMovies() {
 			continue
 		}
 
-
-		connectGenres := make([]map[string]int, 0, len(m.GenreIDs))
-		for _, genreID := range m.GenreIDs {
-			idStrapi, err := getStrapiGenreID(genreID)
-			if err != nil {
-				log.Printf("⚠️ Erreur récupération genre ID Strapi pour TMDB genre ID %d: %v", genreID, err)
-				allSuccess = false
-				break // on arrête ce film, il est incomplet
-			}
-			connectGenres = append(connectGenres, map[string]int{"id": idStrapi})
-		}
 
 		payload := map[string]interface{}{"data": map[string]interface{}{
 			"id_film":              m.ID,
@@ -138,7 +123,7 @@ func SyncMovies() {
 			"vote_average_tmdb":    m.VoteAverage,
 			"vote_count_tmdb":      m.VoteCount,
 			"popularity_tmdb":      m.Popularity,
-			"genre_tv_films":       connectGenres,
+			"genre_tv_films":       m.GenreIDs,
 			"adult":                m.Adult,
 			"popularity_website":   0.0,
 			"vote_average_website": 0.0,
@@ -167,8 +152,6 @@ func SyncMovies() {
 		}
 	}
 
-
-
 	// Si tous les films ont été correctement insérés, on peut dire que la page est traitée
 	if !allSuccess {
 		log.Printf("⚠️ Tous les films de la page %d n'ont pas été insérés. On retentera plus tard.", nextPage)
@@ -177,8 +160,6 @@ func SyncMovies() {
 	}
 
 }
-
-
 
 // MovieHandler déclenche manuellement la sync
 func MovieHandler(w http.ResponseWriter, r *http.Request) {

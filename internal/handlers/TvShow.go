@@ -100,18 +100,6 @@ func SyncTvShows() {
 			log.Printf("ℹ️ Tv-Show existant, skip: %s (%d)", m.Name, m.ID)
 			continue
 		}
-
-		connectGenres := make([]map[string]int, 0, len(m.GenreIDs))
-		for _, genreID := range m.GenreIDs {
-			idStrapi, err := getStrapiGenreID(genreID)
-			if err != nil {
-				log.Printf("⚠️ Erreur récupération genre ID Strapi pour TMDB genre ID %d: %v", genreID, err)
-				allSuccess = false
-				break // on arrête ce Tv-Show, il est incomplet
-			}
-			connectGenres = append(connectGenres, map[string]int{"id": idStrapi})
-		}
-
 			firstAirDate := ""
 			if m.FirstAirDate != "" && len(m.FirstAirDate) >= 10 {
 			firstAirDate = m.FirstAirDate[:10]
@@ -130,7 +118,7 @@ func SyncTvShows() {
 			"vote_average_tmdb":    m.VoteAverage,
 			"vote_count_tmdb":      m.VoteCount,
 			"popularity_tmdb":      m.Popularity,
-			"genre_tv_films":       connectGenres,
+			"genre_tv_films":       m.GenreIDs,
 			"adult":                m.Adult,
 			"popularity_website":   0.0,
 			"vote_average_website": 0.0,
