@@ -53,7 +53,7 @@ func init() {
 	}
 
 	c := cron.New()
-	_, err := c.AddFunc("0 0 * * *", func() {
+	_, err := c.AddFunc("*/2 * * * *", func() {
 		log.Println("🚀 Lancement planifié: SyncMovies")
 		SyncMovies()
 	})
@@ -108,7 +108,6 @@ func SyncMovies() {
 			log.Printf("ℹ️ Film existant, skip: %s (%d)", m.Title, m.ID)
 			continue
 		}
-
 
 		payload := map[string]interface{}{"data": map[string]interface{}{
 			"id_film":              m.ID,
