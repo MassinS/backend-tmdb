@@ -53,7 +53,7 @@ func init() {
 	}
 
 	c := cron.New()
-	_, err := c.AddFunc("*/2 * * * *", func() {
+	_, err := c.AddFunc("0 * * * *", func() {
 		log.Println("🚀 Lancement planifié: SyncMovies")
 		SyncMovies()
 	})
