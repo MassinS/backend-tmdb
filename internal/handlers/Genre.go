@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"time"
+	"io"
 
 	"github.com/joho/godotenv"
 	cron "github.com/robfig/cron/v3"
@@ -16,6 +17,7 @@ import (
 var (
 	tmdbMovieGenreURL string
 	tmdbTvGenreURL    string
+	strapiTvURL       string
 )
 
 // TMDBGenre represents a genre from TMDB
@@ -36,6 +38,8 @@ func init() {
 	}
 	tmdbMovieGenreURL = "https://api.themoviedb.org/3/genre/movie/list"
 	tmdbTvGenreURL = "https://api.themoviedb.org/3/genre/tv/list"
+    strapiTvURL = os.Getenv("STRAPI_URL") + "/api/genre-tv-shows"
+
 	// Schedule both movie and tv genre sync at midnight daily
 	c := cron.New()
 	_, err := c.AddFunc("2 * * * *", func() {
@@ -52,7 +56,6 @@ func init() {
 
 // SyncMovieGenres retrieves movie genres and syncs to Strapi
 func SyncMovieGenres() {
-	strapiTvURL := os.Getenv("STRAPI_URL") + "/api/genre-tv-shows"
 
 	log.Println("🔄 SyncMovieGenres start")
 	syncGenres(tmdbMovieGenreURL, strapiTvURL)
@@ -61,7 +64,6 @@ func SyncMovieGenres() {
 
 // SyncTvGenres retrieves TV genres and syncs to Strapi
 func SyncTvGenres() {
-	strapiTvURL := os.Getenv("STRAPI_URL") + "/api/genre-tv-shows"
 	log.Println("🔄 SyncTvGenres start")
 	syncGenres(tmdbTvGenreURL, strapiTvURL)
 	log.Println("✅ SyncTvGenres done")
@@ -87,17 +89,8 @@ func syncGenres(tmdbURL, strapiURL string) {
 		return
 	}
 	log.Printf("TMDB returned %d genres", len(tmdbRes.Genres))
-    endpoint := os.Getenv("STRAPI_URL") + "/api/genre-tv-shows?" + "filters[id_genre][$eq]"
-	for _, g := range tmdbRes.Genres {
-		exists, err := Exists(g.ID,endpoint)
-		if err != nil {
-			log.Printf("⚠️ check exists error for %d: %v", g.ID, err)
-			continue
-		}
-		if exists {
-			log.Printf("ℹ️ skipped existing genre: %s (%d)", g.Name, g.ID)
-			continue
-		}
+    for _, g := range tmdbRes.Genres {
+	
 
 		payload := map[string]interface{}{"data": map[string]interface{}{"id_genre": g.ID, "nom_genre": g.Name}}
 		body, _ := json.Marshal(payload)
@@ -106,18 +99,39 @@ func syncGenres(tmdbURL, strapiURL string) {
 		req.Header.Set("Content-Type", "application/json")
 		req.Header.Set("Authorization", "Bearer "+strapiToken)
 
-		res, err := http.DefaultClient.Do(req)
-		if err != nil {
+			// Faire la requête
+			res, err := http.DefaultClient.Do(req)
+			if err != nil {
 			log.Printf("❌ Strapi POST error for %s: %v", g.Name, err)
 			continue
-		}
-		res.Body.Close()
+			}
+			defer res.Body.Close()
 
-		if res.StatusCode >= 400 {
-			log.Printf("⚠️ Strapi returned %d for %s", res.StatusCode, g.Name)
-		} else {
-			log.Printf("✅ inserted genre: %s (%d)", g.Name, g.ID)
-		}
+			// Lire tout le corps
+			bodyBytes, err := io.ReadAll(res.Body)
+			if err != nil {
+				log.Printf("❌ Lecture réponse pour %s: %v", g.Name, err)
+				continue
+			}
+
+			if res.StatusCode >= 400 {
+				// Tenter un décodage générique
+				var data map[string]interface{}
+				if err := json.Unmarshal(bodyBytes, &data); err == nil {
+					// Chercher "error" puis "message"
+					if errObj, ok := data["error"].(map[string]interface{}); ok {
+						if msg, ok := errObj["message"].(string); ok {
+							log.Printf("⚠️ Strapi returned %d for %s: %s", res.StatusCode, g.Name, msg)
+							continue
+						}
+					}
+				}
+
+				log.Printf("⚠️ Strapi returned %d for %s: %s", res.StatusCode, g.Name, string(bodyBytes))
+			} else {
+				log.Printf("✅ inserted genre: %s (%d)", g.Name, g.ID)
+			}
+
 
 	}
 
