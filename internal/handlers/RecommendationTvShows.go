@@ -7,7 +7,6 @@ import (
 	"log"
 	"net/http"
 	"os"
-
 	"github.com/joho/godotenv"
 	cron "github.com/robfig/cron/v3"
 )
@@ -140,5 +139,5 @@ func SyncTvShowsRecommendation() {
 func TvShowRecommendationHandler(w http.ResponseWriter, r *http.Request) {
 	go SyncTvShowsRecommendation()
 	w.WriteHeader(http.StatusOK)
-	fmt.Fprintf(w, "Sync Tv-show recommendations triggered")
+	fmt.Fprintf(w, "Synchronisation des recommandations de séries TV déclenchée")
 }

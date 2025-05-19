@@ -160,9 +160,9 @@ func SyncMovies() {
 
 }
 
-// MovieHandler déclenche manuellement la sync
+
 func MovieHandler(w http.ResponseWriter, r *http.Request) {
 	go SyncMovies()
 	w.WriteHeader(http.StatusOK)
-	fmt.Fprintf(w, "SyncMovies triggered")
+	fmt.Fprintf(w, "Synchronisation des films déclenchée")
 }

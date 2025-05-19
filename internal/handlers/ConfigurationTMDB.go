@@ -95,7 +95,7 @@ func SyncConfiguration() {
 	// Décodage avec les champs à la racine de chaque data[]
 	var strapiResponse struct {
 		Data []struct {
-			ID            string      `json:"documentId"`
+			ID            string   `json:"documentId"`
 			BaseURL       string   `json:"base_url"`
 			SecureBaseURL string   `json:"secure_base_url"`
 			BackdropSizes []string `json:"backdrop_sizes"`
@@ -161,23 +161,23 @@ func SyncConfiguration() {
 	strapiChangeKeys := entry.ChangeKeys
 
 	// Log des deux JSON pour debug
-	 strapiJSON, _ := json.MarshalIndent(strapiConfig, "", "  ")
-	 tmdbJSON, _ := json.MarshalIndent(tmdbResp.Images, "", "  ")
-	 log.Printf("🔍 strapiConfig: %s", string(strapiJSON))
-	 log.Printf("🔍 tmdbResp.Images: %s", string(tmdbJSON))
+	strapiJSON, _ := json.MarshalIndent(strapiConfig, "", "  ")
+	tmdbJSON, _ := json.MarshalIndent(tmdbResp.Images, "", "  ")
+	log.Printf("🔍 strapiConfig: %s", string(strapiJSON))
+	log.Printf("🔍 tmdbResp.Images: %s", string(tmdbJSON))
 
 	// Étape 3: comparer changement
- 	if reflect.DeepEqual(strapiConfig, tmdbResp.Images) && reflect.DeepEqual(strapiChangeKeys, tmdbResp.ChangeKeys) {
+	if reflect.DeepEqual(strapiConfig, tmdbResp.Images) && reflect.DeepEqual(strapiChangeKeys, tmdbResp.ChangeKeys) {
 		log.Println("✅ Configuration TMDB inchangée")
 		return
-	 }
-	
+	}
+
 	log.Println("⚠️ Différence détectée, on va mettre à jour…")
 
 	// Étape 4: Construction du payload pour PUT
 	payload := map[string]interface{}{
 		"data": map[string]interface{}{
-			"base_url":        tmdbResp.Images.BaseURL ,
+			"base_url":        tmdbResp.Images.BaseURL,
 			"secure_base_url": tmdbResp.Images.SecureBaseURL,
 			"backdrop_sizes":  tmdbResp.Images.BackdropSizes,
 			"logo_sizes":      tmdbResp.Images.LogoSizes,
@@ -201,18 +201,16 @@ func SyncConfiguration() {
 	}
 	defer putRes.Body.Close()
 
-
 	if putRes.StatusCode >= 200 && putRes.StatusCode < 300 {
 		log.Println("🔄 Configuration mise à jour avec succès")
 	} else {
 		log.Printf("⚠️ PUT échoué - Code: %d", putRes.StatusCode)
-	} 
+	}
 
 }
 
-// Handler HTTP pour déclencher manuellement
 func ConfigurationHandler(w http.ResponseWriter, r *http.Request) {
 	go SyncConfiguration()
 	w.WriteHeader(http.StatusOK)
-	fmt.Fprintf(w, "SyncConfiguration triggered")
+	fmt.Fprintf(w, "Synchronisation de la configuration déclenchée")
 }

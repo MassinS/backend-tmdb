@@ -43,7 +43,6 @@ func init () {
 
 func SyncFilmsRecommendation() {
 
-
   // Ici on va recupèrer la page de film de strapi 
   lastpage := getLastFetchedPageFilmStrapi(strapiRecommendationFilmURL)
   nextPage := lastpage + 1
@@ -141,6 +140,6 @@ func SyncFilmsRecommendation() {
 func FilmRecommendationHandler(w http.ResponseWriter, r *http.Request) {
 	go SyncFilmsRecommendation()
 	w.WriteHeader(http.StatusOK)
-	fmt.Fprintf(w, "Sync Films recommendations triggered")
+    fmt.Fprintf(w, "Synchronisation des recommandations de film TV déclenchée")
 }
 

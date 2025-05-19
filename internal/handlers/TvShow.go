@@ -160,9 +160,9 @@ func SyncTvShows() {
 
 }
 
-// MovieHandler déclenche manuellement la sync
+
 func TvShowHandler(w http.ResponseWriter, r *http.Request) {
 	go SyncTvShows()
 	w.WriteHeader(http.StatusOK)
-	fmt.Fprintf(w, "SyncTvShows triggered")
+	fmt.Fprintf(w, "Synchronisation des séries TV déclenchée")
 }

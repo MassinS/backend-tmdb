@@ -20,19 +20,19 @@ var (
 	strapiTvURL       string
 )
 
-// TMDBGenre represents a genre from TMDB
+// TMDBGenre représente l’enveloppe de réponse renvoyée par TMDB pour un genre
 type TMDBGenre struct {
 	ID   int    `json:"id"`
 	Name string `json:"name"`
 }
 
-// GenreResponse is the envelope TMDB returns
+// GenreResponse représente l’enveloppe de réponse renvoyée par TMDB
 type GenreResponse struct {
 	Genres []TMDBGenre `json:"genres"`
 }
 
 func init() {
-	// Load environment
+
 	if err := godotenv.Load(); err != nil {
 		log.Printf("⚠️ .env non chargé: %v", err)
 	}
@@ -40,7 +40,7 @@ func init() {
 	tmdbTvGenreURL = "https://api.themoviedb.org/3/genre/tv/list"
     strapiTvURL = os.Getenv("STRAPI_URL") + "/api/genre-tv-shows"
 
-	// Schedule both movie and tv genre sync at midnight daily
+
 	c := cron.New()
 	_, err := c.AddFunc("0 0 * * 0", func() {
 		log.Println("🚀 Exécution de SyncMovieGenres et SyncTvGenres chaque dimanche")
@@ -54,7 +54,7 @@ func init() {
 }
 
 
-// SyncMovieGenres retrieves movie genres and syncs to Strapi
+
 func SyncMovieGenres() {
 
 	log.Println("🔄 SyncMovieGenres start")
@@ -70,7 +70,6 @@ func SyncTvGenres() {
 
 }
 
-// syncGenres is shared logic for TMDB -> Strapi
 func syncGenres(tmdbURL, strapiURL string) {
 	strapiToken := os.Getenv("STRAPI_TOKEN")
 
@@ -135,11 +134,11 @@ func syncGenres(tmdbURL, strapiURL string) {
 
 }
 
-// GenreTVShowHandler triggers manual sync of both movie and tv genres
+
 func GenreTVShowHandler(w http.ResponseWriter, r *http.Request) {
 	go SyncMovieGenres()
 	go SyncTvGenres()
 	w.WriteHeader(http.StatusOK)
-	fmt.Fprintf(w, "Sync triggered")
+	fmt.Fprintf(w, "Synchronisation des genres déclenchée")
 }
 
