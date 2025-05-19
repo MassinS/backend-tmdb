@@ -1,6 +1,6 @@
 ﻿# backend-tmdb
 
-## Pour démarrer le serveur, exécute simplement le script :
+## Pour démarrer le serveur, exécuter le script :
 
 ./start.sh
 
