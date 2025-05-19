@@ -7,7 +7,7 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"time"
+
 	"io"
 
 	"github.com/joho/godotenv"
@@ -42,8 +42,8 @@ func init() {
 
 	// Schedule both movie and tv genre sync at midnight daily
 	c := cron.New()
-	_, err := c.AddFunc("2 * * * *", func() {
-		log.Println("🚀 Running SyncMovieGenres and SyncTvGenres")
+	_, err := c.AddFunc("0 0 * * 0", func() {
+		log.Println("🚀 Exécution de SyncMovieGenres et SyncTvGenres chaque dimanche")
 		SyncMovieGenres()
 		SyncTvGenres()
 	})
@@ -62,19 +62,17 @@ func SyncMovieGenres() {
 	log.Println("✅ SyncMovieGenres done")
 }
 
-// SyncTvGenres retrieves TV genres and syncs to Strapi
+
 func SyncTvGenres() {
-	log.Println("🔄 SyncTvGenres start")
+	log.Println("🔄 SyncTvGenres commencé ")
 	syncGenres(tmdbTvGenreURL, strapiTvURL)
-	log.Println("✅ SyncTvGenres done")
+	log.Println("✅ SyncTvGenres terminé")
 
 }
 
 // syncGenres is shared logic for TMDB -> Strapi
 func syncGenres(tmdbURL, strapiURL string) {
 	strapiToken := os.Getenv("STRAPI_TOKEN")
-
-	start := time.Now()
 
 	resp, err := http.Get(fmt.Sprintf("%s?api_key=%s&language=fr-FR", tmdbURL, os.Getenv("API_KEY")))
 	if err != nil {
@@ -102,7 +100,7 @@ func syncGenres(tmdbURL, strapiURL string) {
 			// Faire la requête
 			res, err := http.DefaultClient.Do(req)
 			if err != nil {
-			log.Printf("❌ Strapi POST error for %s: %v", g.Name, err)
+			log.Printf("❌ erreur de POST  Strapi pour %s: %v", g.Name, err)
 			continue
 			}
 			defer res.Body.Close()
@@ -121,13 +119,13 @@ func syncGenres(tmdbURL, strapiURL string) {
 					// Chercher "error" puis "message"
 					if errObj, ok := data["error"].(map[string]interface{}); ok {
 						if msg, ok := errObj["message"].(string); ok {
-							log.Printf("⚠️ Strapi returned %d for %s: %s", res.StatusCode, g.Name, msg)
+						log.Printf("⚠️ Strapi a renvoyé le code %d pour %s : %s", res.StatusCode, g.Name, msg)
 							continue
 						}
 					}
 				}
 
-				log.Printf("⚠️ Strapi returned %d for %s: %s", res.StatusCode, g.Name, string(bodyBytes))
+				log.Printf("⚠️ Strapi a renvoyé le code %d pour %s : %s", res.StatusCode, g.Name, string(bodyBytes))
 			} else {
 				log.Printf("✅ inserted genre: %s (%d)", g.Name, g.ID)
 			}
@@ -135,7 +133,6 @@ func syncGenres(tmdbURL, strapiURL string) {
 
 	}
 
-	log.Printf("Sync complete in %s", time.Since(start))
 }
 
 // GenreTVShowHandler triggers manual sync of both movie and tv genres

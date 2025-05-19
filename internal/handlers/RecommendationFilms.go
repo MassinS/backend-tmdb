@@ -30,7 +30,7 @@ func init () {
 
     c := cron.New()
 	_, err := c.AddFunc("0 0 * * *", func() {
-		log.Println("🚀 Lancement planifié: SyncMovies")
+		log.Println("🚀 Lancement planifié: SyncMovies chaque 24h")
 		SyncMovies()
 	})
 	if err != nil {
@@ -41,10 +41,8 @@ func init () {
 
 }
 
-
 func SyncFilmsRecommendation() {
 
-// Pas besoin de page_fetched_from_strapi_recommendation 
 
   // Ici on va recupèrer la page de film de strapi 
   lastpage := getLastFetchedPageFilmStrapi(strapiRecommendationFilmURL)
@@ -59,7 +57,7 @@ func SyncFilmsRecommendation() {
   }
 
   for _, tmdbID := range FilmsStrapiPage {
-	log.Printf("🔄 Sync Film Recommendation : fetching TMDB film %d", tmdbID)
+	log.Printf("🔄 Synchronisation des recommandations de films : récupération du film TMDB %d", tmdbID)
 
 	var recommendedIDs []int
 	page := 1
@@ -138,16 +136,7 @@ func SyncFilmsRecommendation() {
 		log.Printf("✅ Recommandations insérées pour film %d", tmdbID)
 	}
 }
-
-
-
-
 }
-
-
-
-
-
 
 func FilmRecommendationHandler(w http.ResponseWriter, r *http.Request) {
 	go SyncFilmsRecommendation()

@@ -54,7 +54,7 @@ func init() {
 
 	c := cron.New()
 	_, err := c.AddFunc("0 * * * *", func() {
-		log.Println("🚀 Lancement planifié: SyncMovies")
+		log.Println("🚀 Lancement planifié: SyncMovies chaque une heure ")
 		SyncMovies()
 	})
 	if err != nil {
@@ -71,7 +71,7 @@ func init() {
 func SyncMovies() {
 	lastPage := getLastFetchedPage(strapiFilmURL)
 	nextPage := lastPage + 1
-	log.Printf("🔄 SyncMovies: fetching TMDB page %d", nextPage)
+    log.Printf("🔄 Sync Movies : récupération de la page %d depuis TMDB", nextPage)
 
 	tmdbURL := fmt.Sprintf("%s?api_key=%s&language=fr-FR&page=%d", tmdbMovieURL, os.Getenv("API_KEY"), nextPage)
 	resp, err := http.Get(tmdbURL)

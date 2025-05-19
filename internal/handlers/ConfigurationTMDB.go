@@ -43,10 +43,9 @@ func init() {
 	tmdbConfigurationURL = "https://api.themoviedb.org/3/configuration"
 	strapiConfigurationURL = os.Getenv("STRAPI_URL") + "/api/configurations"
 
-	// Cron toutes les heures (minute 2)
 	c := cron.New()
-	_, err := c.AddFunc("2 * * * *", func() {
-		log.Println("🚀 Lancement planifié: SyncConfiguration")
+	_, err := c.AddFunc("0 0 * * 0", func() {
+		log.Println("🚀 Lancement planifié: SyncConfiguration chaque une semaine ")
 		SyncConfiguration()
 	})
 	if err != nil {
@@ -114,7 +113,7 @@ func SyncConfiguration() {
 
 	// Si aucune entrée, on POST
 	if len(strapiResponse.Data) == 0 {
-		log.Println("➕ Aucune configuration trouvée, création via POST")
+		log.Println(" Aucune configuration trouvée, création via POST")
 		payload := map[string]interface{}{
 			"data": map[string]interface{}{
 				"base_url":        tmdbResp.Images.BaseURL,

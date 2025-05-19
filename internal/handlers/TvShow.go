@@ -51,7 +51,7 @@ func init() {
 
 	c := cron.New()
 	_, err := c.AddFunc("0 * * * *", func() {
-		log.Println("🚀 Lancement planifié: SyncTvShows")
+		log.Println("🚀 Lancement planifié: SyncTvShows chaque une heure")
 		SyncTvShows()
 	})
 	if err != nil {
@@ -63,7 +63,7 @@ func init() {
 func SyncTvShows() {
 	lastPage := getLastFetchedPage(strapiTvShowURL)
 	nextPage := lastPage + 1
-	log.Printf("🔄 SyncTv-Show : fetching TMDB page %d", nextPage)
+    log.Printf("🔄 Sync TV shows : récupération de la page %d depuis TMDB", nextPage)
 
 	tmdbURL := fmt.Sprintf("%s?api_key=%s&language=fr-FR&page=%d", tmdbTvShowURL, os.Getenv("API_KEY"), nextPage)
 	resp, err := http.Get(tmdbURL)
@@ -93,7 +93,7 @@ func SyncTvShows() {
 	for _, m := range tsr.Results {
 		exists, err := Exists(m.ID, endpoint)
 		if err != nil {
-			log.Printf("⚠️ check exists error for %d: %v", m.ID, err)
+           log.Printf("⚠️ Erreur lors de la vérification de l’existence pour l’ID %d : %v", m.ID, err)
 			continue
 		}
 		if exists {

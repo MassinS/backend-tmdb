@@ -23,7 +23,7 @@ func Exists(tmdbID int, endpoint string) (bool, error) {
 	req.Header.Set("Authorization", "Bearer "+strapiToken)
 	res, err := http.DefaultClient.Do(req)
 	if err != nil {
-		log.Printf("⚠️ Erreur exists check film %d: %v", tmdbID, err)
+      log.Printf("⚠️ Erreur lors de la vérification d'existence du film %d : %v", tmdbID, err)
 		return false, err
 	}
 	defer res.Body.Close()
@@ -32,7 +32,7 @@ func Exists(tmdbID int, endpoint string) (bool, error) {
 		Data []interface{} `json:"data"`
 	}
 	if err := json.NewDecoder(res.Body).Decode(&data); err != nil {
-		log.Printf("⚠️ Décodage exists response: %v", err)
+		log.Printf("⚠️ Erreur lors du décodage de la réponse d'existence : %v", err)
 		return false, err
 	}
 	return len(data.Data) > 0, nil
@@ -81,7 +81,7 @@ func getLastFetchedPage(tmdbUrl string) int {
 	// Convertir la chaîne en int
 	page, err := strconv.Atoi(resp.Data[0].PageFetchedFrom)
 	if err != nil {
-		log.Printf("⚠️ Conversion page_fetched_from en int échouée: %v", err)
+	log.Printf("⚠️ Échec de la conversion de page_fetched_from en entier : %v", err)
 		return 0
 	}
 
@@ -125,7 +125,7 @@ func getLastFetchedPageFilmStrapi(url string) int {
 	// Convertir la chaîne en int
 	page, err := strconv.Atoi(resp.Data[0].PageFetchedFrom)
 	if err != nil {
-		log.Printf("⚠️ Conversion page_fetched_from en int échouée: %v", err)
+     log.Printf("⚠️ Échec de la conversion de « page_fetched_from » en entier : %v", err)
 		return 0
 	}
 
@@ -169,7 +169,7 @@ func getLastFetchedPageTvShowsStrapi(url string) int {
 	// Convertir la chaîne en int
 	page, err := strconv.Atoi(resp.Data[0].PageFetchedFrom)
 	if err != nil {
-		log.Printf("⚠️ Conversion page_fetched_from en int échouée: %v", err)
+    	log.Printf("⚠️ Échec de la conversion de « page_fetched_from » en entier : %v", err)
 		return 0
 	}
 
@@ -198,7 +198,7 @@ func getFilmsByPageStrapi(page int) ([]int, error) {
 
 	res, err := http.DefaultClient.Do(req)
 	if err != nil {
-		return nil, fmt.Errorf("❌ erreur appel HTTP: %w", err)
+		return nil, fmt.Errorf("❌ erreur d'appel HTTP: %w", err)
 	}
 	defer res.Body.Close()
 

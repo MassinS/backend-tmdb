@@ -28,7 +28,7 @@ func init() {
 
 	c := cron.New()
 	_, err := c.AddFunc("0 0 * * *", func() {
-		log.Println("🚀 Lancement planifié: SyncMovies")
+		log.Println("🚀 Lancement planifié: SyncMovies chaque 24h")
 		SyncMovies()
 	})
 	if err != nil {
@@ -40,12 +40,11 @@ func init() {
 
 func SyncTvShowsRecommendation() {
 
-	// Pas besoin de page_fetched_from_strapi_recommendation
 
 	// Ici on va recupèrer la page de film de strapi
 	lastpage := getLastFetchedPageTvShowsStrapi(strapiRecommendationTvShowsURL)
 	nextPage := lastpage + 1
-	log.Printf("🔄 Sync Tv Show Recommendation : fetching TMDB page %d", nextPage)
+    log.Printf("🔄 Synchronisation des recommandations de séries TV : récupération de la page %d depuis TMDB", nextPage)
 
 	// Je suis arrivé ici , on doit ajouter une foncion getTvShowsPageStrapi
 	TvShowsStrapiPage, err := getTvShowsByPageStrapi(nextPage)
@@ -56,7 +55,7 @@ func SyncTvShowsRecommendation() {
 	}
 
 	for _, tmdbID := range TvShowsStrapiPage {
-		log.Printf("🔄 Sync Tv Show Recommendation : fetching TMDB Tv Show %d", tmdbID)
+      log.Printf("🔄 Sync TV shows recommendation : récupération de la page %d depuis TMDB", nextPage)
 
 		var recommendedIDs []int
 		page := 1
@@ -74,7 +73,7 @@ func SyncTvShowsRecommendation() {
 
 			var mr TvShowResponse
 			if err := json.NewDecoder(resp.Body).Decode(&mr); err != nil {
-				log.Printf("❌ JSON decode TMDB (page %d) pour Tv Show %d: %v", page, tmdbID, err)
+				log.Printf("❌ Erreur de décodage JSON depuis TMDB (page %d) pour la série TV %d : %v", page, tmdbID, err)
 				break
 			}
 
